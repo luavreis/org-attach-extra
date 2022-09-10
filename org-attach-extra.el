@@ -49,7 +49,7 @@
         (widen)
         (goto-char (or pos (point-min)))
         (if-let* ((target-att-dir (org-attach-dir)))
-            (dolist (file (completing-read-multiple "Attachments to refile to this target:" all))
+            (dolist (file all)
               (let ((path (expand-file-name file att-dir))
                     (target-path (expand-file-name file target-att-dir)))
                 (rename-file path target-path)))
@@ -59,7 +59,9 @@
   "Opens a CRM prompt for refiling attachments in the `org-attach' context at point."
   (interactive)
   (if-let ((att-dir (org-attach-dir)))
-      (let* ((all (org-attach-file-list att-dir))
+      (let* ((all (completing-read-multiple
+                   "Attachments to refile to this target:"
+                   (org-attach-file-list att-dir)))
              (target (org-refile-get-location))
              (file (nth 1 target))
              (pos (nth 3 target)))
@@ -71,7 +73,9 @@
   (interactive)
   (require 'org-roam)
   (if-let ((att-dir (org-attach-dir)))
-      (let* ((all (org-attach-file-list att-dir))
+      (let* ((all (completing-read-multiple
+                   "Attachments to refile to this target:"
+                   (org-attach-file-list att-dir)))
              (target (org-roam-node-read))
              (file (org-roam-node-file target))
              (pos (org-roam-node-point target)))
@@ -88,11 +92,14 @@
                   (mapcar
                    (lambda (x) (plist-get x :path))
                    (org-attach-extra-get-links-for-dir att-dir)))))
-        (org-id-get-create)
-        (org-attach-dir-get-create)
-        (let* ((file (buffer-file-name))
-               (pos (point)))
-          (org-attach-extra--refile-to att-dir all file pos)))
+        (when (yes-or-no-p
+               (format "The following attachments will be moved:\n%s\nProceed?"
+                       (string-join all "\n")))
+          (org-id-get-create)
+          (org-attach-dir-get-create)
+          (let* ((file (buffer-file-name))
+                 (pos (point)))
+            (org-attach-extra--refile-to att-dir all file pos))))
     (message "There is no attachment folder for the heading at point.")))
 
 (defun org-attach-extra-remove-id ()
@@ -103,13 +110,16 @@ After moving, also deletes the previous attachment directory when it is empty."
   (unless (org-id-get) (error "Cannot find the existent ID of current heading"))
   (if-let* ((att-dir (org-attach-dir)))
       (let ((all (org-attach-file-list att-dir)))
-        (when (org-entry-delete (point) "ID")
-          (org-id-update-id-locations nil 'silent))
-        (let* ((file (buffer-file-name))
-               (pos (point)))
-          (org-attach-extra--refile-to att-dir all file pos))
-        (when (directory-empty-p att-dir)
-          (delete-directory att-dir)))
+        (when (yes-or-no-p
+               (format "The following attachments will be moved:\n%s\nProceed?"
+                       (string-join all "\n")))
+          (when (org-entry-delete (point) "ID")
+            (org-id-update-id-locations nil 'silent))
+          (let* ((file (buffer-file-name))
+                 (pos (point)))
+            (org-attach-extra--refile-to att-dir all file pos))
+          (when (directory-empty-p att-dir)
+            (delete-directory att-dir))))
     (message "There is no attachment folder for the heading at point.")))
 
 (provide 'org-attach-extra)
