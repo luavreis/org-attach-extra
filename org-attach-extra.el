@@ -1,19 +1,29 @@
 ;;; org-attach-extra.el --- Useful tools for dealing with org-attach files  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
+;;;
+;;; This file provides some simple but useful functions for managing attachments
+;;; and reestructuring documents while preserving org-attach links and data.
+;;;
+;;; Namely, we have:
+;;;
+;;; For management:
+;;; - `org-attach-extra-delete-unlinked': helps delete unused attachments for an entry.
+;;;
+;;; For refiling attachments into other entries' attach directories:
+;;; - `org-attach-extra-refile'
+;;; - `org-attach-extra-refile-to-roam-node'
+;;;
+;;; For refactoring org-attach links when modifying org-ids:
+;;; - `org-attach-extra-add-id'
+;;; - `org-attach-extra-change-id'
+;;; - `org-attach-extra-remove-id'
+;;;
+;;; Miscellaneous:
+;;; - `org-attach-extra-open-in-treemacs'
 ;;
 
 ;;; Code:
-
-(defun org-attach-extra-open-in-treemacs ()
-  "Show the `org-attach-dir' in treemacs."
-  (interactive)
-  (require 'treemacs)
-  (if-let* ((att-dir (org-attach-dir)))
-      (progn
-        (treemacs-select-window)
-        (treemacs-goto-file-node att-dir))
-    (message "No attachment folder for node.")))
 
 (defun org-attach-extra-get-links-for-dir (dir)
   "Find all attachment links in the visible buffer whose `org-attach-dir's are equal to DIR."
@@ -140,6 +150,16 @@ After moving, also deletes the previous attachment directory when it is empty."
           (when (directory-empty-p att-dir)
             (delete-directory att-dir))))
     (message "There is no attachment folder for the heading at point.")))
+
+(defun org-attach-extra-open-in-treemacs ()
+  "Show the `org-attach-dir' in treemacs."
+  (interactive)
+  (require 'treemacs)
+  (if-let* ((att-dir (org-attach-dir)))
+      (progn
+        (treemacs-select-window)
+        (treemacs-goto-file-node att-dir))
+    (message "No attachment folder for node.")))
 
 (provide 'org-attach-extra)
 
