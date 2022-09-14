@@ -122,6 +122,25 @@ After moving, also deletes the previous attachment directory when it is empty."
             (delete-directory att-dir))))
     (message "There is no attachment folder for the heading at point.")))
 
+(defun org-attach-extra-change-id ()
+  "Modify the ID for current heading and move attachments accordingly."
+  (interactive)
+  (if-let ((att-dir (org-attach-dir)))
+      (let* ((all (org-attach-file-list att-dir))
+             (new-id (read-string "New ID:")))
+        (when (yes-or-no-p
+               (format "The following attachments will be moved:\n%s\nProceed?"
+                       (string-join all "\n")))
+          (when (org-entry-put (point) "ID" new-id)
+            (org-id-update-id-locations nil 'silent))
+          (org-attach-dir-get-create)
+          (let* ((file (buffer-file-name))
+                 (pos (point)))
+            (org-attach-extra--refile-to att-dir all file pos))
+          (when (directory-empty-p att-dir)
+            (delete-directory att-dir))))
+    (message "There is no attachment folder for the heading at point.")))
+
 (provide 'org-attach-extra)
 
 ;;; org-attach-extra.el ends here
